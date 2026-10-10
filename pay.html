@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>QRコード＆管理アプリ</title>
+    <!-- QRコード生成用ライブラリ (QRCode.js) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; text-align: center; }
+        .container { background: white; padding: 20px; display: inline-block; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 450px; width: 100%; text-align: left; box-sizing: border-box; }
+        h2 { text-align: center; color: #333; margin-top: 0; }
+       
+        /* タブメニュー */
+        .tabs { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
+        .tab-btn { background: none; border: none; font-size: 14px; font-weight: bold; cursor: pointer; color: #666; padding: 6px 8px; border-radius: 4px; }
+        .tab-btn.active { background-color: #007bff; color: white; }
+
+        /* タブコンテンツ */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* フォーム部品 */
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 4px; color: #444; }
+        .form-group input, .form-group textarea { width: 100%; padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+       
+        .btn { width: 100%; padding: 10px; font-size: 16px; cursor: pointer; background-color: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold; margin-top: 10px; }
+        .btn:hover { background-color: #218838; }
+        .btn-primary { background-color: #007bff; }
+        .btn-primary:hover { background-color: #0056b3; }
+        .btn-share { background-color: #17a2b8; }
+        .btn-share:hover { background-color: #138496; }
+        .btn-danger { background-color: #dc3545; padding: 5px 10px; font-size: 12px; width: auto; margin-top: 0; }
+        .btn-danger:hover { background-color: #c82333; }
+
+        /* リスト表示 */
+        .item-card { background: #f9f9f9; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
+        .item-card:hover { background: #f1f1f9; }
+        .item-info { word-break: break-all; font-size: 14px; flex-grow: 1; padding-right: 10px; }
+       
+        /* 詳細ビュー */
+        .detail-view { background: #fdfdfd; border: 2px dashed #007bff; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
+        .qr-preview { margin-top: 15px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+       
+        .empty-msg { color: #888; text-align: center; font-size: 14px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>QR管理アプリ</h2>
+
+        <!-- タブボタン -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('create')">新規作成</button>
+            <button class="tab-btn" onclick="switchTab('register')">新規登録</button>
+            <button class="tab-btn" onclick="switchTab('registering')">登録中</button>
+            <button class="tab-btn" onclick="switchTab('history')">履歴</button>
+        </div>
+
+        <!-- 1. 新規作成タブ -->
+        <div id="tab-create" class="tab-content active">
+            <h3>QRコード新規作成</h3>
+            <div class="form-group">
+                <label>テキストまたはURL:</label>
+                <input type="text" id="createInput" placeholder="例: https://example.com">
+            </div>
+            <button class="btn" onclick="handleCreateQR()">QRコードを作成して履歴へ</button>
+            <div id="createQrResult" class="qr-preview"></div>
+        </div>
+
+        <!-- 2. 新規登録タブ -->
+        <div id="tab-register" class="tab-content">
+            <h3>データ新規登録</h3>
+            <div class="form-group">
+                <label>登録タイトル・名前:</label>
+                <input type="text" id="regTitle" placeholder="例: 商品A / 会員ID:123">
+            </div>
+            <div class="form-group">
+                <label>コード内容 (URL/テキスト):</label>
+                <input type="text" id="regData" placeholder="例: https://example.com/item1">
+            </div>
+            <button class="btn" onclick="handleAddNewRegistration()">登録中に送る</button>
+        </div>
+
+        <!-- 3. 登録中タブ -->
+        <div id="tab-registering" class="tab-content">
+            <h3>登録中アイテム</h3>
+            <p style="font-size: 12px; color: #666;">アイテムを押すと編集・QR表示ができます</p>
+           
+            <div id="detailSection" style="display:none;" class="detail-view">
+                <h4 style="margin-top:0; color:#007bff;">アイテム詳細・QR表示</h4>
+                <div class="form-group">
+                    <label>タイトル:</label>
+                    <input type="text" id="editTitle">
+                </div>
+                <div class="form-group">
+                    <label>テキスト（変更可）:</label>
+                    <textarea id="editData" rows="3"></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="generateQRFromEdit()">この内容でQRコードを表示</button>
+               
+                <!-- QRコードと共有ボタンを表示するエリア -->
+                <div id="editQrResult" class="qr-preview"></div>
+
+                <button class="btn" style="background-color: #6c757d; margin-top: 15px;" onclick="closeDetail()">閉じる</button>
+            </div>
+
+            <div id="registeringList"></div>
+        </div>
+
+        <!-- 4. 履歴タブ -->
+        <div id="tab-history" class="tab-content">
+            <h3>作成・登録履歴</h3>
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+    <script>
+        let historyData = JSON.parse(localStorage.getItem('qr_history')) || [];
+        let registeringData = JSON.parse(localStorage.getItem('qr_registering')) || [];
+        let activeEditIndex = null;
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+            if (tabName === 'create') {
+                document.getElementById('tab-create').classList.add('active');
+                event.currentTarget.classList.add('active');
+            } else if (tabName === 'register') {
+                document.getElementById('tab-register').classList.add('active');
+                event.currentTarget.classList.add('active');
+            } else if (tabName === 'registering') {
+                document.getElementById('tab-registering').classList.add('active');
+                event.currentTarget.classList.add('active');
+                renderRegistering();
+            } else if (tabName === 'history') {
+                document.getElementById('tab-history').classList.add('active');
+                event.currentTarget.classList.add('active');
+                renderHistory();
+            }
+        }
+
+        function switchTabDirect(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+           
+            if(tabName === 'registering') {
+                document.getElementById('tab-registering').classList.add('active');
+                document.querySelectorAll('.tab-btn')[2].classList.add('active');
+                renderRegistering();
+            }
+        }
+
+        function handleCreateQR() {
+            const val = document.getElementById('createInput').value.trim();
+            if (!val) {
+                alert('テキストを入力してください。');
+                return;
+            }
+
+            const resultContainer = document.getElementById('createQrResult');
+            resultContainer.innerHTML = "";
+            new QRCode(resultContainer, { text: val, width: 128, height: 128 });
+
+            historyData.unshift({ text: val, date: new Date().toLocaleString() });
+            localStorage.setItem('qr_history', JSON.stringify(historyData));
+           
+            alert('QRコードを作成し、履歴に保存しました！');
+            document.getElementById('createInput').value = '';
+        }
+
+        function handleAddNewRegistration() {
+            const title = document.getElementById('regTitle').value.trim();
+            const data = document.getElementById('regData').value.trim();
+
+            if (!title || !data) {
+                alert('タイトルとコード内容の両方を入力してください。');
+                return;
+            }
+
+            registeringData.unshift({
+                id: Date.now(),
+                title: title,
+                data: data,
+                date: new Date().toLocaleString()
+            });
+            localStorage.setItem('qr_registering', JSON.stringify(registeringData));
+
+            alert('「登録中」タブにデータを送りました！');
+            document.getElementById('regTitle').value = '';
+            document.getElementById('regData').value = '';
+           
+            switchTabDirect('registering');
+        }
+
+        function renderRegistering() {
+            const listEl = document.getElementById('registeringList');
+            if (registeringData.length === 0) {
+                listEl.innerHTML = '<div class="empty-msg">現在、登録中のアイテムはありません。</div>';
+                document.getElementById('detailSection').style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            registeringData.forEach((item, index) => {
+                html += `
+                    <div class="item-card" onclick="selectItem(${index})">
+                        <div class="item-info">
+                            <strong>${item.title}</strong><br>
+                            <small>${item.data}</small><br>
+                            <span style="color: #888; font-size: 11px;">${item.date}</span>
+                        </div>
+                        <button class="btn btn-danger" onclick="event.stopPropagation(); deleteRegistering(${index})">削除</button>
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
+
+        function selectItem(index) {
+            activeEditIndex = index;
+            const item = registeringData[index];
+           
+            document.getElementById('editTitle').value = item.title;
+            document.getElementById('editData').value = item.data;
+            document.getElementById('editQrResult').innerHTML = "";
+            document.getElementById('detailSection').style.display = 'block';
+            document.getElementById('detailSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function generateQRFromEdit() {
+            if (activeEditIndex === null) return;
+
+            const newTitle = document.getElementById('editTitle').value.trim();
+            const newData = document.getElementById('editData').value.trim();
+
+            if (!newTitle || !newData) {
+                alert('タイトルとテキストを入力してください。');
+                return;
+            }
+
+            registeringData[activeEditIndex].title = newTitle;
+            registeringData[activeEditIndex].data = newData;
+            localStorage.setItem('qr_registering', JSON.stringify(registeringData));
+
+            const container = document.getElementById('editQrResult');
+            container.innerHTML = "";
+           
+            // QRコード用ラッパー
+            const qrBox = document.createElement('div');
+            qrBox.style.margin = "10px 0";
+            container.appendChild(qrBox);
+
+            new QRCode(qrBox, {
+                text: newData,
+                width: 140,
+                height: 140
+            });
+
+            // 共有ボタンの作成
+            const shareBtn = document.createElement('button');
+            shareBtn.className = "btn btn-share";
+            shareBtn.innerText = "共有";
+            shareBtn.onclick = function() {
+                shareContent(newTitle, newData);
+            };
+            container.appendChild(shareBtn);
+
+            renderRegistering();
+        }
+
+        // 共有ボタンを押したときの処理（スマホのシステム共有 または クリップボードコピー）
+        function shareContent(title, text) {
+            const shareData = {
+                title: title,
+                text: `${title}\n${text}`
+            };
+
+            // Web Share APIに対応しているブラウザの場合
+            if (navigator.share) {
+                navigator.share(shareData).catch((err) => {
+                    console.log('共有がキャンセルまたは失敗しました', err);
+                });
+            } else {
+                // 非対応ブラウザの場合はクリップボードにコピー
+                navigator.clipboard.writeText(`${title}: ${text}`).then(() => {
+                    alert('テキストをクリップボードにコピーしました！');
+                }).catch(err => {
+                    alert('共有に失敗しました。');
+                });
+            }
+        }
+
+        function closeDetail() {
+            document.getElementById('detailSection').style.display = 'none';
+            activeEditIndex = null;
+        }
+
+        function deleteRegistering(index) {
+            if (confirm('この登録中アイテムを削除しますか？')) {
+                registeringData.splice(index, 1);
+                localStorage.setItem('qr_registering', JSON.stringify(registeringData));
+                if (activeEditIndex === index) {
+                    closeDetail();
+                }
+                renderRegistering();
+            }
+        }
+
+        function renderHistory() {
+            const listEl = document.getElementById('historyList');
+            if (historyData.length === 0) {
+                listEl.innerHTML = '<div class="empty-msg">履歴はまだありません。</div>';
+                return;
+            }
+
+            let html = '';
+            historyData.forEach((item) => {
+                html += `
+                    <div class="item-card" style="cursor: default;">
+                        <div class="item-info">
+                            <strong>${item.text}</strong><br>
+                            <span style="color: #888; font-size: 11px;">${item.date}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
+    </script>
+
+</body>
+</html> 
