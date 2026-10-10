@@ -2,17 +2,19 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QRコード＆管理アプリ</title>
     <!-- QRコード生成用ライブラリ (QRCode.js) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { font-family: sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; text-align: center; }
-        .container { background: white; padding: 20px; display: inline-block; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 450px; width: 100%; text-align: left; box-sizing: border-box; }
-        h2 { text-align: center; color: #333; margin-top: 0; }
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; background-color: #f4f4f9; margin: 0; padding: 10px; text-align: center; }
+        .container { background: white; padding: 15px; display: inline-block; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: left; }
+        h2 { text-align: center; color: #333; margin-top: 0; font-size: 20px; }
        
-        /* タブメニュー */
-        .tabs { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
-        .tab-btn { background: none; border: none; font-size: 14px; font-weight: bold; cursor: pointer; color: #666; padding: 6px 8px; border-radius: 4px; }
+        /* タブメニュー（スマホ幅対応） */
+        .tabs { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 5px; gap: 4px; }
+        .tab-btn { background: none; border: none; font-size: 13px; font-weight: bold; cursor: pointer; color: #666; padding: 8px 4px; border-radius: 4px; flex: 1; text-align: center; }
         .tab-btn.active { background-color: #007bff; color: white; }
 
         /* タブコンテンツ */
@@ -21,28 +23,28 @@
 
         /* フォーム部品 */
         .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 4px; color: #444; }
-        .form-group input, .form-group textarea { width: 100%; padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: #444; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 4px; }
        
-        .btn { width: 100%; padding: 10px; font-size: 16px; cursor: pointer; background-color: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold; margin-top: 10px; }
+        .btn { width: 100%; padding: 12px; font-size: 15px; cursor: pointer; background-color: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold; margin-top: 10px; }
         .btn:hover { background-color: #218838; }
         .btn-primary { background-color: #007bff; }
         .btn-primary:hover { background-color: #0056b3; }
         .btn-share { background-color: #17a2b8; }
         .btn-share:hover { background-color: #138496; }
-        .btn-danger { background-color: #dc3545; padding: 5px 10px; font-size: 12px; width: auto; margin-top: 0; }
+        .btn-danger { background-color: #dc3545; padding: 6px 10px; font-size: 12px; width: auto; margin-top: 0; }
         .btn-danger:hover { background-color: #c82333; }
 
         /* リスト表示 */
-        .item-card { background: #f9f9f9; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
+        .item-card { background: #f9f9f9; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .item-card:hover { background: #f1f1f9; }
-        .item-info { word-break: break-all; font-size: 14px; flex-grow: 1; padding-right: 10px; }
+        .item-info { word-break: break-all; font-size: 13px; flex-grow: 1; padding-right: 8px; }
        
         /* 詳細ビュー */
-        .detail-view { background: #fdfdfd; border: 2px dashed #007bff; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
+        .detail-view { background: #fdfdfd; border: 2px dashed #007bff; padding: 12px; border-radius: 6px; margin-bottom: 15px; }
         .qr-preview { margin-top: 15px; text-align: center; display: flex; flex-direction: column; align-items: center; }
        
-        .empty-msg { color: #888; text-align: center; font-size: 14px; margin-top: 20px; }
+        .empty-msg { color: #888; text-align: center; font-size: 13px; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -86,10 +88,10 @@
         <!-- 3. 登録中タブ -->
         <div id="tab-registering" class="tab-content">
             <h3>登録中アイテム</h3>
-            <p style="font-size: 12px; color: #666;">アイテムを押すと編集・QR表示ができます</p>
+            <p style="font-size: 11px; color: #666;">アイテムを押すと編集・QR表示ができます</p>
            
             <div id="detailSection" style="display:none;" class="detail-view">
-                <h4 style="margin-top:0; color:#007bff;">アイテム詳細・QR表示</h4>
+                <h4 style="margin-top:0; color:#007bff; font-size:15px;">アイテム詳細・QR表示</h4>
                 <div class="form-group">
                     <label>タイトル:</label>
                     <input type="text" id="editTitle">
@@ -100,7 +102,7 @@
                 </div>
                 <button class="btn btn-primary" onclick="generateQRFromEdit()">この内容でQRコードを表示</button>
                
-                <!-- QRコードと共有ボタンを表示するエリア -->
+                <!-- QRコードと画像共有ボタンを表示するエリア -->
                 <div id="editQrResult" class="qr-preview"></div>
 
                 <button class="btn" style="background-color: #6c757d; margin-top: 15px;" onclick="closeDetail()">閉じる</button>
@@ -162,7 +164,7 @@
 
             const resultContainer = document.getElementById('createQrResult');
             resultContainer.innerHTML = "";
-            new QRCode(resultContainer, { text: val, width: 128, height: 128 });
+            new QRCode(resultContainer, { text: val, width: 140, height: 140 });
 
             historyData.unshift({ text: val, date: new Date().toLocaleString() });
             localStorage.setItem('qr_history', JSON.stringify(historyData));
@@ -250,46 +252,70 @@
            
             // QRコード用ラッパー
             const qrBox = document.createElement('div');
+            qrBox.id = "qrCanvasBox";
             qrBox.style.margin = "10px 0";
             container.appendChild(qrBox);
 
+            // QRCode.js で描画
             new QRCode(qrBox, {
                 text: newData,
-                width: 140,
-                height: 140
+                width: 150,
+                height: 150
             });
 
-            // 共有ボタンの作成
+            // 画像としての共有ボタンの作成
             const shareBtn = document.createElement('button');
             shareBtn.className = "btn btn-share";
-            shareBtn.innerText = "共有";
+            shareBtn.innerText = "QR画像を共有";
             shareBtn.onclick = function() {
-                shareContent(newTitle, newData);
+                shareQRImage(newTitle);
             };
             container.appendChild(shareBtn);
 
             renderRegistering();
         }
 
-        // 共有ボタンを押したときの処理（スマホのシステム共有 または クリップボードコピー）
-        function shareContent(title, text) {
-            const shareData = {
-                title: title,
-                text: `${title}\n${text}`
-            };
+        // QRコードの画像をファイルとして共有する処理
+        async function shareQRImage(title) {
+            const qrBox = document.getElementById('qrCanvasBox');
+            const canvas = qrBox.querySelector('canvas') || qrBox.querySelector('img');
+           
+            if (!canvas) {
+                alert('QRコードが生成されていません。');
+                return;
+            }
 
-            // Web Share APIに対応しているブラウザの場合
-            if (navigator.share) {
-                navigator.share(shareData).catch((err) => {
-                    console.log('共有がキャンセルまたは失敗しました', err);
-                });
-            } else {
-                // 非対応ブラウザの場合はクリップボードにコピー
-                navigator.clipboard.writeText(`${title}: ${text}`).then(() => {
-                    alert('テキストをクリップボードにコピーしました！');
-                }).catch(err => {
-                    alert('共有に失敗しました。');
-                });
+            try {
+                let blob;
+                if (canvas.tagName === 'CANVAS') {
+                    blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                } else {
+                    // imgタグの場合のフォールバック
+                    const response = await fetch(canvas.src);
+                    blob = await response.blob();
+                }
+
+                const file = new File([blob], `${title}_qr.png`, { type: 'image/png' });
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        title: title,
+                        text: `${title}のQRコードです`,
+                        files: [file]
+                    });
+                } else {
+                    // ファイル共有非対応の環境では画像をダウンロード保存させる
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `${title}_qr.png`;
+                    link.click();
+                    alert('お使いの環境は直接共有に非対応のため、QRコード画像をダウンロードしました。');
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error(err);
+                    alert('共有がキャンセルまたは失敗しました。');
+                }
             }
         }
 
